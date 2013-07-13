@@ -14,14 +14,16 @@ public class DirectoryGeneratorHtml {
 
     void buildHtml() {
         if (resource == null) {
-            resource= new File("");
+            resource= new File("c:\\krasyuk");
         }
 
         File [] fList= resource.listFiles();
+//        File ff= resource.getAbsoluteFile();
 
-        System.out.println(Runtime.getRuntime().totalMemory());
-/*        for(File f: fList) {
-            System.out.println(f.getAbsoluteFile());
-        }*/
+
+        if (fList != null)
+            for(File f: fList) {
+                System.out.println(f.getAbsoluteFile());
+        }
     }
 }

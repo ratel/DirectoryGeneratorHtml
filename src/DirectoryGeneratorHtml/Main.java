@@ -23,5 +23,12 @@ public class Main {
             System.out.println("Ошибка при работе с файлом!");
             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
         }
+
+        HttpServer server= new HttpServer();
+        try {
+            server.serverRun();
+        } catch (IOException e) {
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }
     }
 }

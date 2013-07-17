@@ -14,7 +14,7 @@ import java.io.Writer;
  */
 public class Main {
     public static void main(String [] args) {
-        DirectoryGeneratorHtml dgh= new DirectoryGeneratorHtml();
+        /*DirectoryGeneratorHtml dgh= new DirectoryGeneratorHtml();
 
         try (Writer otputFile= new FileWriter(new File("index.html"))) {
             //Writer otputFile= new FileWriter(new File("out.txt"));
@@ -22,7 +22,7 @@ public class Main {
         } catch (IOException e) {
             System.out.println("Ошибка при работе с файлом!");
             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        }
+        }          */
 
         HttpServer server= new HttpServer();
         try {

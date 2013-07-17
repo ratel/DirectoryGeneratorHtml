@@ -1,5 +1,6 @@
 package DirectoryGeneratorHtml;
 
+import javax.activation.MimetypesFileTypeMap;
 import java.io.*;
 import java.net.Socket;
 
@@ -30,7 +31,7 @@ public class ClientManager implements Runnable {
             String [] cmdSplit;
 
             while (true) {
-                System.out.println("Ожидаем команду");
+                //System.out.println("Ожидаем команду");
                 stringCmd= reader.readLine();
 
                 if (stringCmd == null) break;
@@ -38,29 +39,104 @@ public class ClientManager implements Runnable {
                 System.out.println("Получена строка:");
                 System.out.println(stringCmd);
                 cmdSplit= stringCmd.split(" ");
+
                 if (cmdSplit.length > 0) {
-                    if (CMDHEAD.compareToIgnoreCase(stringCmd) == 0) {
-                        sendHead(writer);
+                    if (CMDHEAD.compareToIgnoreCase(cmdSplit[0]) == 0) {
+                        //sendHead(output);
+                        //output.flush();
                     }
-                    if (CMDGET.compareToIgnoreCase(stringCmd) == 0) {
-                        sendResource(writer, cmdSplit);
+                    if (CMDGET.compareToIgnoreCase(cmdSplit[0]) == 0) {
+                        output.write("test".getBytes());
+                        writer.write("test2");
+                        writer.flush();
+                        output.flush();
+                        sendResource(output, cmdSplit);
+                        output.flush();
                     }
                 }
             }
 
-            writer.close();
+            output.close();
             System.out.println("Клиентский поток отработал");
         } catch (IOException e) {
             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
         }
     }
 
-    private void sendHead(OutputStreamWriter writer) {
-        //writer.write("");
-        //writer.flush();
+    private void sendHead(OutputStream writer, String fileType, String fileLength) throws IOException {
+        OutputStreamWriter outPut= new OutputStreamWriter(writer);
+
+        outPut.write("HTTP/1.0 200 OK\r\n");
+
+        outPut.write(("Content-Type: " + fileType + "\r\n"));
+        outPut.write(("Content-Length: " + fileLength + "\r\n"));
+
+        outPut.write("\r\n");
     }
 
-    private void sendResource(OutputStreamWriter writer, String [] cmdSplit) {
+    private void sendResource(OutputStream writer, String [] cmdSplit) {
+        if (cmdSplit.length == 0)
+            return;
 
+        File resource, fileIndex;
+        String resourcePath= System.getProperty("user.dir");
+        String pathIndex;
+
+        resourcePath.concat(cmdSplit[1]);
+        resource= new File(resourcePath);
+
+        System.out.println("\tПытаемся послать ресурс: " + resource.getAbsolutePath());
+
+        if (resource.exists()) {
+            if (resource.isDirectory()) {
+                pathIndex= resourcePath + File.separator + "index.html";
+
+                fileIndex= new File(pathIndex);
+
+                if (!fileIndex.exists()) {
+                    DirectoryGeneratorHtml dgh= new DirectoryGeneratorHtml();
+
+                    try {
+                        dgh.buildHtml(new OutputStreamWriter(writer), resourcePath);
+                    } catch (IOException e) {
+                        System.err.println("Ошибка при генерации HTML-файла!");
+                        e.printStackTrace();
+                    }
+
+                    return;
+                }
+
+                resource= fileIndex;
+            }
+
+            System.out.println("\tОтправляем ресурс: " + resource.getAbsolutePath());
+
+            try (BufferedInputStream readerResource= new BufferedInputStream(new FileInputStream(resource))) {
+                sendHead(writer, new MimetypesFileTypeMap().getContentType(resource), String.valueOf(resource.length()));
+                sendData(readerResource, new BufferedOutputStream(writer));
+            } catch (IOException e) {
+                System.out.println("Ошибка при отправке файла по HTTP!");
+                e.printStackTrace();
+            }
+        }
+        else {
+            System.out.println("Запрошенный ресурс не найден");
+        }
+
+
+    }
+
+    private void sendData(BufferedInputStream data, BufferedOutputStream out) {
+        byte buf[] = new byte[4096];
+        int count;
+
+        try {
+            while ((count = data.read(buf)) >= 0) {
+                out.write(buf, 0, count);
+            }
+        } catch (IOException e) {
+            System.err.println("Ошибка при пересылки данных файла!");
+            e.printStackTrace();
+        }
     }
 }

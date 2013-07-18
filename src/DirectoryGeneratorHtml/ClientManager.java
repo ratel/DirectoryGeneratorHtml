@@ -1,8 +1,8 @@
 package DirectoryGeneratorHtml;
 
-import javax.activation.MimetypesFileTypeMap;
 import java.io.*;
 import java.net.Socket;
+import java.net.URLConnection;
 
 /**
  * Created with IntelliJ IDEA.
@@ -34,6 +34,7 @@ public class ClientManager implements Runnable {
                 //System.out.println("Ожидаем команду");
                 stringCmd= reader.readLine();
 
+                //if (stringCmd == null) continue;
                 if (stringCmd == null) break;
 
                 System.out.println("Получена строка:");
@@ -45,11 +46,8 @@ public class ClientManager implements Runnable {
                         //sendHead(output);
                         //output.flush();
                     }
+
                     if (CMDGET.compareToIgnoreCase(cmdSplit[0]) == 0) {
-                        output.write("test".getBytes());
-                        writer.write("test2");
-                        writer.flush();
-                        output.flush();
                         sendResource(output, cmdSplit);
                         output.flush();
                     }
@@ -72,6 +70,7 @@ public class ClientManager implements Runnable {
         outPut.write(("Content-Length: " + fileLength + "\r\n"));
 
         outPut.write("\r\n");
+        outPut.flush();
     }
 
     private void sendResource(OutputStream writer, String [] cmdSplit) {
@@ -82,14 +81,14 @@ public class ClientManager implements Runnable {
         String resourcePath= System.getProperty("user.dir");
         String pathIndex;
 
-        resourcePath.concat(cmdSplit[1]);
+        resourcePath= resourcePath + cmdSplit[1];
         resource= new File(resourcePath);
 
         System.out.println("\tПытаемся послать ресурс: " + resource.getAbsolutePath());
 
         if (resource.exists()) {
             if (resource.isDirectory()) {
-                pathIndex= resourcePath + File.separator + "index.html";
+                pathIndex= resourcePath + /*File.separator + */"index.html";
 
                 fileIndex= new File(pathIndex);
 
@@ -112,7 +111,8 @@ public class ClientManager implements Runnable {
             System.out.println("\tОтправляем ресурс: " + resource.getAbsolutePath());
 
             try (BufferedInputStream readerResource= new BufferedInputStream(new FileInputStream(resource))) {
-                sendHead(writer, new MimetypesFileTypeMap().getContentType(resource), String.valueOf(resource.length()));
+                //sendHead(writer, new MimetypesFileTypeMap().getContentType(resource), String.valueOf(resource.length()));
+                sendHead(writer, URLConnection.getFileNameMap().getContentTypeFor(resource.getAbsolutePath()), String.valueOf(resource.length()));
                 sendData(readerResource, new BufferedOutputStream(writer));
             } catch (IOException e) {
                 System.out.println("Ошибка при отправке файла по HTTP!");
@@ -134,8 +134,10 @@ public class ClientManager implements Runnable {
             while ((count = data.read(buf)) >= 0) {
                 out.write(buf, 0, count);
             }
+
+            out.flush();
         } catch (IOException e) {
-            System.err.println("Ошибка при пересылки данных файла!");
+            System.err.println("Ошибка при пересылке данных файла!");
             e.printStackTrace();
         }
     }

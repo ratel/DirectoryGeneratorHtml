@@ -27,6 +27,7 @@ public class DirectoryGeneratorHtml {
         buildBody(outStream, dir);
 
         outStream.write("</HTML>\n");
+        outStream.flush();
     }
 
     void buildHead(Writer outStream) throws IOException {
@@ -83,7 +84,9 @@ public class DirectoryGeneratorHtml {
             for (File f: fList) {
                 fileAttr= Files.readAttributes(f.toPath(), BasicFileAttributes.class);
                 outStream.write("\t\t\t<tr>\n");
-                outStream.write("\t\t\t\t<th align= \"left\"><a href= \"file:///"+ f.getAbsolutePath() + "\">" +
+                //outStream.write("\t\t\t\t<th align= \"left\"><a href= \"file:///"+ f.getAbsolutePath() + "\">" +
+                //        f.getName() + "</a> </th>\n");
+                outStream.write("\t\t\t\t<th align= \"left\"><a href= \""+ f.getName() + "\">" +
                         f.getName() + "</a> </th>\n");
                 outStream.write("\t\t\t\t<th align= \"left\">" + ((f.isFile()) ? f.length() : " ") + "</th>\n");
                 outStream.write("\t\t\t\t<th align= \"left\">" + fileAttr.creationTime() + "</th>\n");

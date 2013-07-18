@@ -14,15 +14,28 @@ import java.io.Writer;
  */
 public class Main {
     public static void main(String [] args) {
-        /*DirectoryGeneratorHtml dgh= new DirectoryGeneratorHtml();
+        /*File f1= new File("index.html");
+        File f2= new File("2.htm");
+        File f3= new File("01.gif");
+        System.out.println("Content-Type: " + new MimetypesFileTypeMap().getContentType(f1));
+        System.out.println("Content-Type: " + new MimetypesFileTypeMap().getContentType(f2));
+        System.out.println("Content-Type: " + new MimetypesFileTypeMap().getContentType(f3));
+
+
+        FileNameMap fileNameMap = URLConnection.getFileNameMap();
+        String type = fileNameMap.getContentTypeFor(f2.getAbsolutePath());
+        System.out.println("");
+        System.out.println("Content-Type: " + type);    */
+        //System.out.println("Content-Type: " + f3.);
+
+        DirectoryGeneratorHtml dgh= new DirectoryGeneratorHtml();
 
         try (Writer otputFile= new FileWriter(new File("index.html"))) {
-            //Writer otputFile= new FileWriter(new File("out.txt"));
             dgh.buildHtml(otputFile, System.getProperty("user.dir"));
         } catch (IOException e) {
             System.out.println("Ошибка при работе с файлом!");
             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        }          */
+        }
 
         HttpServer server= new HttpServer();
         try {

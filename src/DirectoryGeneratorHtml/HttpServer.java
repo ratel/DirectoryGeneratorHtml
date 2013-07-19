@@ -20,7 +20,7 @@ public class HttpServer {
         while (true) {
             Socket clientSocket= servSocket.accept();
             System.out.println("Подключение");
-            Thread clientThread= new Thread(new ClientManager(clientSocket));
+            Thread clientThread= new Thread(new ClientManager(clientSocket, System.getProperty("user.dir")));
             clientThread.start();
         }
     }

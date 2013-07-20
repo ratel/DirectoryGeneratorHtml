@@ -17,7 +17,7 @@ public class ClientManager implements Runnable {
     final static String CMDGET= "GET";
     Socket s;
     String sharedDir;
-    static String currentDir= "C:\\Programms\\Java\\projects IDEA\\repositoris\\DirectoryGeneratorHtml";
+    static String currentDir= "C:\\krasyuk\\repository\\DirectoryGeneratorHtml";
 
     ClientManager(Socket s, String sharedDir) {
         this.s= s;
@@ -27,11 +27,12 @@ public class ClientManager implements Runnable {
 
     @Override
     public void run() {
-        try {
+        OutputStream output= null;
+
+            try {
             InputStream input= s.getInputStream();
             BufferedReader reader= new BufferedReader(new InputStreamReader(input, "Cp1251"));
-            OutputStream output= s.getOutputStream();
-            OutputStreamWriter writer= new OutputStreamWriter(output);
+            output= s.getOutputStream();
             String stringCmd= "";
             String [] cmdSplit;
 
@@ -47,24 +48,34 @@ public class ClientManager implements Runnable {
                 if (cmdSplit.length > 0) {
                     if (CMDHEAD.compareToIgnoreCase(cmdSplit[0]) == 0) {
                         doCmdHead(output, cmdSplit);
-                        output.flush();
                     }
                     else if (CMDGET.compareToIgnoreCase(cmdSplit[0]) == 0) {
                         doCmdGet(output, cmdSplit);
-                        output.flush();
                     }
                     else {
                         doErrorAnswer(output, ErrorCode.UNKNOWNCMD);
-                        output.flush();
                     }
+                    return;
                 }
             }
 
-            output.close();
             System.out.println("Клиентский поток отработал");
         } catch (IOException e) {
             e.printStackTrace();
         }
+        finally {
+                try {
+                    output.close();
+                } catch (IOException e) {
+
+                }
+            try {
+                s.close();
+            } catch (IOException e) {
+
+            }
+        }
+
     }
 
     protected void doCmdHead(OutputStream writer, String [] cmdSplit) {
@@ -122,7 +133,8 @@ public class ClientManager implements Runnable {
 
     protected String formPathResource(String resName) {
         final String parentDir= "..";
-        String resourcePath= currentDir;
+        //String resourcePath= currentDir;
+        String resourcePath= sharedDir;
         int i;
 
         if (resName.length() >= parentDir.length())
@@ -152,10 +164,8 @@ public class ClientManager implements Runnable {
 
         if (resource.exists()) {
             if (resource.isDirectory()) {
-                currentDir= resource.getAbsolutePath();
+                //currentDir= resource.getAbsolutePath();
                 pathIndex= resourcePath + "index.html";
-
-                System.out.println("\tНовая текущая директория: " + currentDir);
 
                 fileIndex= new File(pathIndex);
 
@@ -163,8 +173,10 @@ public class ClientManager implements Runnable {
                     DirectoryGeneratorHtml dgh= new DirectoryGeneratorHtml();
 
                     try {
-                        sendHead(writer, "text/html", "1");
-                        dgh.buildHtml(new OutputStreamWriter(writer), resourcePath);
+                        sendHead(writer, "text/html", "");
+                        OutputStreamWriter outStream = new OutputStreamWriter(writer);
+                        dgh.buildHtml(outStream, resourcePath);
+                        outStream.flush();
                     } catch (IOException e) {
                         ErrorCode err = ErrorCode.EXCEPTION;
                         err.setErrText("Ошибка при генерации HTML-файла!");
@@ -204,8 +216,13 @@ public class ClientManager implements Runnable {
 
         outPut.write("HTTP/1.0 200 OK\r\n");
 
-        outPut.write(("Content-Type: " + fileType + "\r\n"));
-        outPut.write(("Content-Length: " + fileLength + "\r\n"));
+        if (fileType != null)
+            if (fileType.length() > 0)
+                outPut.write(("Content-Type: " + fileType + "\r\n"));
+
+        if (fileType != null)
+            if (fileLength.length() > 0)
+                outPut.write(("Content-Length: " + fileLength + "\r\n"));
 
         outPut.write("\r\n");
         outPut.flush();

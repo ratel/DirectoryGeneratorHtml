@@ -1,6 +1,9 @@
 package DirectoryGeneratorHtml;
 
+import java.io.File;
+import java.io.FileWriter;
 import java.io.IOException;
+import java.io.Writer;
 
 /**
  * Created with IntelliJ IDEA.
@@ -25,14 +28,14 @@ public class Main {
         System.out.println("Content-Type: " + type);    */
         //System.out.println("Content-Type: " + f3.);
 
-        /*DirectoryGeneratorHtml dgh= new DirectoryGeneratorHtml();
+        DirectoryGeneratorHtml dgh= new DirectoryGeneratorHtml();
 
         try (Writer otputFile= new FileWriter(new File("index.html"))) {
             dgh.buildHtml(otputFile, System.getProperty("user.dir"));
         } catch (IOException e) {
             System.out.println("Ошибка при работе с файлом!");
             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        }*/
+        }
 
         HttpServer server= new HttpServer();
         try {

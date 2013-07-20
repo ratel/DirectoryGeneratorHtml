@@ -89,7 +89,9 @@ public class DirectoryGeneratorHtml {
                 outStream.write("\t\t\t<tr>\n");
                 //outStream.write("\t\t\t\t<th align= \"left\"><a href= \"file:///"+ f.getAbsolutePath() + "\">" +
                 //        f.getName() + "</a> </th>\n");
-                outStream.write("\t\t\t\t<th align= \"left\"><a href= \""+ f.getName() + "\">" +
+                outStream.write("\t\t\t\t<th align= \"left\"><a href= \""+ f.getName() +
+                        (f.isDirectory() ? "/" : "") +
+                        "\">" +
                         f.getName() + "</a> </th>\n");
                 outStream.write("\t\t\t\t<th align= \"left\">" + ((f.isFile()) ? f.length() : " ") + "</th>\n");
                 outStream.write("\t\t\t\t<th align= \"left\">" + fileAttr.creationTime() + "</th>\n");

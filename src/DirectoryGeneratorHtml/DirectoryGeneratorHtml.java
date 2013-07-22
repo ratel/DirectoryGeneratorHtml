@@ -73,7 +73,7 @@ public class DirectoryGeneratorHtml {
         BasicFileAttributes fileAttr;
 
         outStream.write("\t\t\t<tr>\n");
-        outStream.write("\t\t\t\t<th align= \"left\"><a href= \""+ "..."/*resource.getParentFile().getName()*/ + "\">" +
+        outStream.write("\t\t\t\t<th align= \"left\"><a href= \""+ "../"/*resource.getParentFile().getName()*/ + "\">" +
                 resource.getParent() + "</a> </th>\n");
         outStream.write("\t\t\t</tr>\n");
 

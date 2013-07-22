@@ -12,10 +12,10 @@ import java.net.Socket;
  * To change this template use File | Settings | File Templates.
  */
 public class HttpServer {
-    public void serverRun() throws IOException {
-        ServerSocket servSocket= new ServerSocket(1700);
+    public void serverRun(int serverPort) throws IOException {
+        ServerSocket servSocket= new ServerSocket(serverPort);
 
-        System.out.println("Открыто серверное соединение " + servSocket.getLocalSocketAddress() + "  " + servSocket.getLocalPort());
+        System.out.println("Открыто серверное соединение " + servSocket.getLocalSocketAddress());
 
         while (true) {
             Socket clientSocket= servSocket.accept();

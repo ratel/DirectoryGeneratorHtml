@@ -1,4 +1,4 @@
-package DirectoryGeneratorHtml;
+package HttpServer;
 
 import java.io.*;
 import java.net.Socket;
@@ -19,7 +19,10 @@ public class ClientManager implements Runnable {
     final static String DEFAULT_FILENAME= "index.html";
     final static String DEFAULT_MIMETYPEFILES= "text/html";
     private Socket s;
+    BufferedReader readerS= null;
+    //InputStreamReader readerS= null;
     private String sharedDir;
+    enum CmdType {HEAD, GET}
 
     ClientManager(Socket s, String sharedDir) {
         this.s= s;
@@ -29,19 +32,21 @@ public class ClientManager implements Runnable {
     @Override
     public void run() {
         OutputStream output= null;
-        BufferedReader reader= null;
+        //BufferedReader reader= null;
 
             try {
             InputStream input= s.getInputStream();
-            reader= new BufferedReader(new InputStreamReader(input, "Cp1251"));
+            //readerS= new BufferedReader(new InputStreamReader(input, "UTF-8"));
             output= s.getOutputStream();
             String stringCmd= "";
             String [] cmdSplit;
 
             while (true) {
-                stringCmd= reader.readLine();                                               // Считывание строки из сокета.
+                //stringCmd= readerS.readLine();                                              // Считывание строки из сокета.
+                stringCmd= getCmdHttp(input);                                               // Считывание строки из сокета.
 
                 if (stringCmd == null) break;
+                if (stringCmd.length() == 0) continue;
 
                 System.out.println("Получена строка:");
                 System.out.println(stringCmd);
@@ -67,7 +72,7 @@ public class ClientManager implements Runnable {
         finally {
             try {
                 if (output != null) output.close();
-                if (reader != null) reader.close();
+                if (readerS != null) readerS.close();
             } catch (IOException e) {
                 System.err.println("Ошибка при закрытии потоков ввода/вывода сокета!");
             }
@@ -81,74 +86,54 @@ public class ClientManager implements Runnable {
 
     }
 
-    protected void doCmdHead(OutputStream writer, String [] cmdSplit) {
-        if (cmdSplit.length < 2)
-            return;
+    String getCmdHttp(InputStream input) throws IOException {
+        if (readerS == null)
+            readerS= new BufferedReader(new InputStreamReader(input, "UTF-8"));
 
-        File resource, fileIndex;
-        String resourcePath= formPathResource(cmdSplit[1]);
-        String pathIndex;
+        return readerS.readLine();                                               // Считывание строки из сокета.
 
-        resource= new File(resourcePath);
+/*        if (readerS == null)                                                   // Пробовал считывать непосредственно
+            readerS= new InputStreamReader(input, "UTF-8");                      // из InputStreamReader с указанной
+                                                                                 // кодировкой..результат тот же
+        char buf[] = new char[4096];
+        StringBuilder cmdBuild = new StringBuilder();
+        int count;
 
-        if (resource.exists()) {
-            if (resource.isDirectory()) {
-                pathIndex= resourcePath + DEFAULT_FILENAME;
+        cmdBuild.setLength(0);
 
-                fileIndex= new File(pathIndex);
-
-                if (!fileIndex.exists()) {
-                    DirectoryGeneratorHtml dgh= new DirectoryGeneratorHtml();
-
-                    try {
-                        OutputStreamWriter indexWriter= new OutputStreamWriter(writer);
-                        dgh.buildHtml(indexWriter, resourcePath);
-
-                        sendHead(writer, DEFAULT_MIMETYPEFILES, "0");
-                    } catch (IOException e) {
-                        ErrorCode err = ErrorCode.EXCEPTION;
-                        err.setErrText("Ошибка при генерации HTML-файла!");
-                        doErrorAnswer(writer, err);
-
-                        System.err.println("Ошибка при генерации HTML-файла!");
-                        e.printStackTrace();
-                    }
-
-                    return;
-                }
-
-                resource= fileIndex;
-            }
-
-            try (BufferedInputStream readerResource= new BufferedInputStream(new FileInputStream(resource))) {
-                //sendHead(writer, new MimetypesFileTypeMap().getContentType(resource), String.valueOf(resource.length()));
-                sendHead(writer, URLConnection.getFileNameMap().getContentTypeFor(resource.getAbsolutePath()), String.valueOf(resource.length()));
-            } catch (IOException e) {
-                ErrorCode err = ErrorCode.EXCEPTION;
-                err.setErrText("Ошибка при отправке файла по HTTP!");
-                doErrorAnswer(writer, err);
-
-                System.out.println("Ошибка при отправке файла по HTTP!");
-                e.printStackTrace();
-            }
+        while (readerS.ready()) {
+            count = readerS.read(buf);
+            if (count > 0)
+                cmdBuild.append(buf, 0, count);
         }
-        else {
-            System.out.println("Запрошенный ресурс не найден");
-            doErrorAnswer(writer, ErrorCode.NORESOURCE);
-        }
+
+        return cmdBuild.toString();*/
     }
 
     protected String formPathResource(String resName) {
         return (sharedDir + resName);
     }
 
+    protected void doCmdHead(OutputStream writer, String [] cmdSplit) {
+        doCmdGetOrHead(writer, cmdSplit, CmdType.HEAD);
+    }
+
     protected void doCmdGet(OutputStream writer, String [] cmdSplit) {
-        if (cmdSplit.length < 2)
+        doCmdGetOrHead(writer, cmdSplit, CmdType.GET);
+    }
+
+    protected void doCmdGetOrHead(OutputStream writer, String [] cmdSplit, CmdType cmdType) {
+        if (cmdSplit.length < 2) {
+            ErrorCode err = ErrorCode.EXCEPTION;
+            err.setErrText("Для данной команды указано недостаточное число аргументов!");
+            doErrorAnswer(writer, err);
+
             return;
+        }
 
         File resource, fileIndex;
         String resourcePath= formPathResource(cmdSplit[1]);                                 // Получение имени запрошенного ресурса.
-        String pathIndex;
+        //String pathIndex;
 
         resource= new File(resourcePath);
 
@@ -156,20 +141,25 @@ public class ClientManager implements Runnable {
 
         if (resource.exists()) {
             if (resource.isDirectory()) {                                                   // Если ресурс- директория,
-                pathIndex= resourcePath + DEFAULT_FILENAME;                                 // отправляем индекс-файл.
+                //pathIndex= resourcePath + DEFAULT_FILENAME;                                 // отправляем индекс-файл.
 
-                fileIndex= new File(pathIndex);
+                fileIndex= new File(/*pathIndex*/(resourcePath + DEFAULT_FILENAME));
 
                 if (!fileIndex.exists()) {                                                  // Если индекс-файла нет,
-                    DirectoryGeneratorHtml dgh= new DirectoryGeneratorHtml();
-
                     try {
-                        sendHead(writer, DEFAULT_MIMETYPEFILES, null);
-                        dgh.buildHtml(new OutputStreamWriter(writer), resourcePath);        // сгенерируем его и отправим в поток.
+                        if (cmdType == CmdType.GET) {
+                            DirectoryGeneratorHtml dgh= new DirectoryGeneratorHtml();
+                            sendHead(writer, DEFAULT_MIMETYPEFILES, null);
+                            dgh.buildHtml(new OutputStreamWriter(writer), resourcePath);    // сгенерируем его и отправим в поток.
+                        }
+                        else
+                            sendHead(writer, DEFAULT_MIMETYPEFILES, "0");
                     } catch (IOException e) {
-                        ErrorCode err = ErrorCode.EXCEPTION;
-                        err.setErrText("Ошибка при генерации HTML-файла!");
-                        doErrorAnswer(writer, err);
+                        if (cmdType == CmdType.GET) {
+                            ErrorCode err = ErrorCode.EXCEPTION;
+                            err.setErrText("Ошибка при генерации HTML-файла!");
+                            doErrorAnswer(writer, err);
+                        }
 
                         System.err.println("Ошибка при генерации HTML-файла!");
                         e.printStackTrace();
@@ -180,11 +170,15 @@ public class ClientManager implements Runnable {
 
                 resource= fileIndex;                                                        // Если индекс-файл существует, отправим его.
             }
-                                                                                            // Отправляем запрошенный файл.
-            try (BufferedInputStream readerResource= new BufferedInputStream(new FileInputStream(resource))) {
+
+            try ( BufferedInputStream readerResource=
+                         ((cmdType == CmdType.GET) ? new BufferedInputStream(new FileInputStream(resource)) : null) ) {
                 //sendHead(writer, new MimetypesFileTypeMap().getContentType(resource), String.valueOf(resource.length()));
                 sendHead(writer, URLConnection.getFileNameMap().getContentTypeFor(resource.getAbsolutePath()), String.valueOf(resource.length()));
-                sendData(readerResource, new BufferedOutputStream(writer));
+
+                if (cmdType == CmdType.GET) {
+                    sendData(readerResource, new BufferedOutputStream(writer));             // Отправляем запрошенный файл.
+                }
             } catch (IOException e) {
                 ErrorCode err = ErrorCode.EXCEPTION;
                 err.setErrText("Ошибка при отправке файла по HTTP!");
@@ -229,11 +223,20 @@ public class ClientManager implements Runnable {
 
     protected void doErrorAnswer(OutputStream output, ErrorCode err) {
         Writer outPutW= new OutputStreamWriter(output);
+        /*OutputStreamWriter outPutW= null;                                                  // пробовал отправлять в OutputStreamWriter
+        try {                                                                                // с заданием кодировки..без указания
+            outPutW = new OutputStreamWriter(output, "utf-8");                               // META в html отображение зависит от браузера
+        } catch (UnsupportedEncodingException e) {
+            System.err.println("Неподдерживаемая кодировка!");
+            e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
+        }*/
+
 
         String errData = "<html><title>Error " + err.getCode() + "</title>" +
                 "\t\t<META http-equiv= \"content-type\"  content= \"text/html; charset=utf-8\">\n" +
                 "<body>" + err.getErrText() + "</body></html>";
 
+        System.out.println("Выводим ошибку " + err.getCode() + " " + err.getErrText());
         try {
             sendHead(output, DEFAULT_MIMETYPEFILES, String.valueOf(errData.length()));
             outPutW.write(errData);
@@ -264,16 +267,6 @@ enum ErrorCode {
                 break;
             default: errText= "";
         }
-
-        /*switch (this) {
-            case NORESOURCE: errText= "Ресурс не найден!";
-                break;
-            case EXCEPTION: errText= "Ошибка выполнения!";
-                break;
-            case UNKNOWNCMD: errText= "Неизвестная команда!";
-                break;
-            default: errText= "";
-        }                  */
     }
 
     int getCode() {

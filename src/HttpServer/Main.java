@@ -1,4 +1,4 @@
-package DirectoryGeneratorHtml;
+package HttpServer;
 
 import java.io.IOException;
 
@@ -11,7 +11,7 @@ import java.io.IOException;
  */
 public class Main {
     public static void main(String [] args) {
-        /*DirectoryGeneratorHtml dgh= new DirectoryGeneratorHtml();
+        /*HttpServer dgh= new HttpServer();
 
         try (Writer otputFile= new FileWriter(new File("index.html"))) {
             dgh.buildHtml(otputFile, System.getProperty("user.dir"));

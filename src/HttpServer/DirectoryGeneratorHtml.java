@@ -1,4 +1,4 @@
-package DirectoryGeneratorHtml;
+package HttpServer;
 
 import java.io.File;
 import java.io.IOException;
@@ -73,7 +73,12 @@ public class DirectoryGeneratorHtml {
         BasicFileAttributes fileAttr;
 
         outStream.write("\t\t\t<tr>\n");
-        outStream.write("\t\t\t\t<th align= \"left\"><a href= \""+ "../"/*resource.getParentFile().getName()*/ + "\">" +
+        outStream.write("\t\t\t\t<th align= \"left\">" + "<b>Переход к родительской дирректории</b>" + "</th>\n");
+        outStream.write("\t\t\t</tr>\n");
+
+        outStream.write("\t\t\t<tr>\n");
+        //outStream.write("\t\t\t\t<th align= \"left\">" + "</th>\n");
+        outStream.write("\t\t\t\t<th align= \"center\"><a href= \""+ "../"/*resource.getParentFile().getName()*/ + "\">" +
                 resource.getParent() + "</a> </th>\n");
         outStream.write("\t\t\t</tr>\n");
 

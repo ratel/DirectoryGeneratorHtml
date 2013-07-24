@@ -3,6 +3,8 @@ package HttpServer;
 import java.io.*;
 import java.net.Socket;
 import java.net.URLConnection;
+import java.net.URLDecoder;
+import java.net.URLEncoder;
 
 /**
  * Created with IntelliJ IDEA.
@@ -36,17 +38,16 @@ public class ClientManager implements Runnable {
 
             try {
             InputStream input= s.getInputStream();
-            //readerS= new BufferedReader(new InputStreamReader(input, "UTF-8"));
+            //reader= new BufferedReader(new InputStreamReader(input, "UTF-8"));  // Cp1251 UTF-8
             output= s.getOutputStream();
             String stringCmd= "";
             String [] cmdSplit;
 
             while (true) {
-                //stringCmd= readerS.readLine();                                              // Считывание строки из сокета.
+                //stringCmd= reader.readLine();                                              // Считывание строки из сокета.
                 stringCmd= getCmdHttp(input);                                               // Считывание строки из сокета.
 
                 if (stringCmd == null) break;
-                if (stringCmd.length() == 0) continue;
 
                 System.out.println("Получена строка:");
                 System.out.println(stringCmd);
@@ -90,9 +91,11 @@ public class ClientManager implements Runnable {
         if (readerS == null)
             readerS= new BufferedReader(new InputStreamReader(input, "UTF-8"));
 
-        return readerS.readLine();                                               // Считывание строки из сокета.
 
-/*        if (readerS == null)                                                   // Пробовал считывать непосредственно
+
+        return readerS.readLine();                                               // Считывание строки из сокета.
+          /* */
+    /*    if (readerS == null)                                                   // Пробовал считывать непосредственно
             readerS= new InputStreamReader(input, "UTF-8");                      // из InputStreamReader с указанной
                                                                                  // кодировкой..результат тот же
         char buf[] = new char[4096];
@@ -107,11 +110,25 @@ public class ClientManager implements Runnable {
                 cmdBuild.append(buf, 0, count);
         }
 
-        return cmdBuild.toString();*/
+        return cmdBuild.toString();/**/
     }
 
     protected String formPathResource(String resName) {
-        return (sharedDir + resName);
+        File f;
+        f= new File(sharedDir + resName);
+        String res= "";
+
+        try {
+            res= f.getCanonicalPath();
+        } catch (IOException e) {
+            System.err.println("Запрошено некорректное имя файла!");
+            e.printStackTrace();
+        }
+
+        if (!res.startsWith(sharedDir))
+            res= "";
+
+        return res;
     }
 
     protected void doCmdHead(OutputStream writer, String [] cmdSplit) {
@@ -132,12 +149,33 @@ public class ClientManager implements Runnable {
         }
 
         File resource, fileIndex;
-        String resourcePath= formPathResource(cmdSplit[1]);                                 // Получение имени запрошенного ресурса.
-        //String pathIndex;
+        String resourcePath;
+
+        try {
+            resourcePath = formPathResource(URLDecoder.decode(cmdSplit[1], "UTF-8"));       // Получение имени запрошенного ресурса.
+        } catch (UnsupportedEncodingException e) {
+            System.out.println("Возникла проблема при декодировании имени ресурса!");
+            ErrorCode err = ErrorCode.EXCEPTION;
+            err.setErrText("Возникла проблема при декодировании имени ресурса!");
+            doErrorAnswer(writer, err);
+            e.printStackTrace();
+
+            return;
+        }
+
+        if (resourcePath.length() == 0) {
+            doErrorAnswer(writer, ErrorCode.ERRACCESS);
+            return;
+        }
 
         resource= new File(resourcePath);
 
-        System.out.println("\tПытаемся отправить ресурс: " + resource.getAbsolutePath());
+        try {
+            System.out.println("\tПытаемся отправить ресурс: " + resource.getCanonicalPath());
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
 
         if (resource.exists()) {
             if (resource.isDirectory()) {                                                   // Если ресурс- директория,
@@ -229,7 +267,7 @@ public class ClientManager implements Runnable {
         } catch (UnsupportedEncodingException e) {
             System.err.println("Неподдерживаемая кодировка!");
             e.printStackTrace();  //To change body of catch statement use File | Settings | File Templates.
-        }*/
+        }/**/
 
 
         String errData = "<html><title>Error " + err.getCode() + "</title>" +
@@ -250,7 +288,7 @@ public class ClientManager implements Runnable {
 
 
 enum ErrorCode {
-    NORESOURCE(404), EXCEPTION(500), UNKNOWNCMD(501);
+    ERRACCESS(403),NORESOURCE(404), EXCEPTION(500), UNKNOWNCMD(501);
 
     private int code;
     private String errText;
@@ -259,6 +297,8 @@ enum ErrorCode {
         this.code= code;
 
         switch (code) {
+            case 403: errText= "Запрошенный ресурс не является разрешенным!";
+                break;
             case 404: errText= "Ресурс не найден!";
                 break;
             case 500: errText= "Ошибка выполнения!";
